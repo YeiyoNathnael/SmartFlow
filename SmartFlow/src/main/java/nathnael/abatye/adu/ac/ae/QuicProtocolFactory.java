@@ -10,10 +10,10 @@ public class QuicProtocolFactory implements ApplicationProtocolConnectionFactory
         
         int clientId = clientCounter++; 
         // Assign a unique ID to each new client (increments every time)
-
+      
         // Print connection info when a new client connects
         System.out.println("\n========================================");
-        System.out.println(" New Traffic Light Connected: Client-" + clientId);
+        System.out.println(" New Client Connected: Client-" + clientId);
         System.out.println("========================================");
 
         // Create and return a new connection handler for this client

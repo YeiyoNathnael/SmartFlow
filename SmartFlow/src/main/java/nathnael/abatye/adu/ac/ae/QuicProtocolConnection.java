@@ -1,5 +1,6 @@
+package nathnael.abatye.adu.ac.ae;
 
-package nathnael.yeiyo.adu.ac.ae;
+import nathnael.abatye.adu.ac.ae.handlers.MessageUtil;
 import tech.kwik.core.QuicStream;
 import tech.kwik.core.server.ApplicationProtocolConnection;
 
@@ -23,21 +24,34 @@ public class QuicProtocolConnection implements ApplicationProtocolConnection {
         // Start processing the stream in parallel
     }
 
+
+  // here to handle the connection, in both cases, if its a pub or sub
     private void handleStream(QuicStream stream) {
         try {
             // Read the full message sent by the client through the stream
-            String message = MessageUtil.readAll(stream.getInputStream());
+            EventMessage message = MessageUtil.readAll(stream.getInputStream());
 
             // Identify what kind of message was received
-            String messageType = MessageUtil.classifyMessage(message);
+            String messageType = message.getType();
 
             // Print the received message, its type, and the stream ID
-            System.out.println(message + " -> Received " + messageType 
+            System.out.println(message + " -> Received from " + messageType 
                     + " | stream=" + stream.getInputStream());
 
             // Create an acknowledgment response to send back to the client
-            String response = "ACK from Abu Dhabi Smart Mobility Control Center -> " + messageType + " received successfully";
+            String response;
+            if (messageType == "SUBSCRIBER") {
+               response =  "ACK from Broker -> request to " + message.getPayload()+ "to topic: " + message.getTopic()
+              + " received successfully";             
+            } else if(messageType == "PUBLISHER") {
+              
+              response =  "ACK from Broker -> " + message.getPayload()+ "to topic: " + message.getTopic()
+              + " received successfully";
 
+            }else{
+                response = "ACK from Broker -> I DONT KNOW WHO YOU ARE";
+            }
+           
             // Send the response back through the same stream
             MessageUtil.writeText(stream.getOutputStream(), response);
 

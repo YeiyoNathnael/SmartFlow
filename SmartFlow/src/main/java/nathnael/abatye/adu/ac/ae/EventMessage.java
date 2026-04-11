@@ -3,22 +3,35 @@ package nathnael.abatye.adu.ac.ae;
 import com.google.gson.Gson;
 
 /**
- * EventMessage encapsulates the structure of an event flowing through the SmartFlow system.
- * It contains the topic (e.g., TRAFFIC.accidents), the payload (data), and metadata like timestamp.
+ * EventMessage encapsulates the structure of an message flowing through the SmartFlow system.
+ *
+ * It can be understood from two perspectives, the Publisher and Subscriber
+ * 
+ * Publisher side:
+ * It contains the type(Publisher) , topic (e.g., TRAFFIC.accidents), the payload (actual event message to send), and timestamp.
+ * It will be understood as Publisher wants to send event message to this topic.
+ *
+ * Subscriber side:
+ * It contains the type(Subscriber) , topic (e.g., TRAFFIC.accidents), the payload (SUBSCRIBE/UNSUBSCRIBE), and timestamp.
+ * It will be understood as Subscriber wants to SUBSCRIBE or UNSUBSCRIBE to this topic.
+ *
  */
 public class EventMessage {
+    
+    private String type;
     private String topic;
     private String payload;
     private long timestamp;
-    private String publisherId;
+    private String id;
 
     public EventMessage() {}
 
-    public EventMessage(String topic, String payload, String publisherId) {
+    public EventMessage(String topic, String payload, String type,String id) {
         this.topic = topic;
         this.payload = payload;
-        this.publisherId = publisherId;
+        this.type = type;
         this.timestamp = System.currentTimeMillis();
+        this.id = id;
     }
 
     public String getTopic() {
@@ -33,8 +46,11 @@ public class EventMessage {
         return timestamp;
     }
 
-    public String getPublisherId() {
-        return publisherId;
+    public String getType() {
+        return type;
+    }
+    public String getId(){
+        return id;
     }
 
     public String toJson() {

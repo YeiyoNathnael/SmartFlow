@@ -1,4 +1,5 @@
 package nathnael.abatye.adu.ac.ae;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -6,6 +7,7 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
+import nathnael.abatye.adu.ac.ae.handlers.SecurityUtils;
 import tech.kwik.core.QuicClientConnection;
 import tech.kwik.core.QuicStream;
 
@@ -53,7 +55,8 @@ public class Publisher {
      * @param payload Payload describing the event.
      */
 public void publish(String topic, String payload) throws Exception {
-    EventMessage message = new EventMessage(topic, payload, type, publisherId);
+    String encryptedPayload = SecurityUtils.encryptPayload(payload);
+    EventMessage message = new EventMessage(topic, encryptedPayload, type, publisherId);
     String json = message.toJson() + "\n";
 
     // Create a bidirectional stream
@@ -79,6 +82,7 @@ public void publish(String topic, String payload) throws Exception {
 
     System.out.println("[" + publisherId + "] Successfully published event on topic: " + topic);
 }
+
     /**
      * Terminates connection securely.
      */

@@ -6,6 +6,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
+import nathnael.abatye.adu.ac.ae.handlers.SecurityUtils;
 import tech.kwik.core.QuicClientConnection;
 import tech.kwik.core.QuicStream;
 
@@ -76,8 +77,11 @@ public class Subscriber {
                 String rawJson = new String(buffer, 0, readBytes, StandardCharsets.UTF_8);
                 try {
                     EventMessage event = EventMessage.fromJson(rawJson.trim());
+                    String payloadForDisplay;
+                    payloadForDisplay = SecurityUtils.decryptPayload(event.getPayload());
+                    
                     System.out.println("[" + subscriberId + "] Received Event: Topic=" + event.getTopic()  
-                                     + " | Payload=" + event.getPayload());
+                                     + " | Payload=" + payloadForDisplay);
                 } catch (Exception e) {
                     System.out.println("[" + subscriberId + "] Received raw message: " + rawJson.trim());
                 }

@@ -1,11 +1,11 @@
 package nathnael.abatye.adu.ac.ae;
 
+import java.io.FileInputStream;
+import java.security.KeyStore;
+
 import tech.kwik.core.log.SysOutLogger;
 import tech.kwik.core.server.ServerConnectionConfig;
 import tech.kwik.core.server.ServerConnector;
-
-import java.io.FileInputStream;
-import java.security.KeyStore;
 
 
 public class Broker {
@@ -26,7 +26,7 @@ public class Broker {
     public static void main(String[] args) throws Exception {
 
         
-        final int PORT = Integer.parseInt(args[1]);
+        final int PORT = Integer.parseInt(args[0]);
 
         // Create a keystore object to store the server certificate
         KeyStore keyStore = KeyStore.getInstance("JKS");

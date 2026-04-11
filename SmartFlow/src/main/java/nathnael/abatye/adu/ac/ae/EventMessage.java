@@ -22,14 +22,16 @@ public class EventMessage {
     private String topic;
     private String payload;
     private long timestamp;
+    private String id;
 
     public EventMessage() {}
 
-    public EventMessage(String topic, String payload, String type) {
+    public EventMessage(String topic, String payload, String type,String id) {
         this.topic = topic;
         this.payload = payload;
         this.type = type;
         this.timestamp = System.currentTimeMillis();
+        this.id = id;
     }
 
     public String getTopic() {
@@ -46,6 +48,9 @@ public class EventMessage {
 
     public String getType() {
         return type;
+    }
+    public String getId(){
+        return id;
     }
 
     public String toJson() {

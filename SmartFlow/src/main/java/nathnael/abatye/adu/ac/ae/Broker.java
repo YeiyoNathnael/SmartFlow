@@ -1,8 +1,13 @@
 package nathnael.abatye.adu.ac.ae;
 
 import java.io.FileInputStream;
+import java.io.OutputStream;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 
+import tech.kwik.core.QuicClientConnection;
+import tech.kwik.core.QuicStream;
 import tech.kwik.core.log.SysOutLogger;
 import tech.kwik.core.server.ServerConnectionConfig;
 import tech.kwik.core.server.ServerConnector;
@@ -25,8 +30,13 @@ public class Broker {
     
     public static void main(String[] args) throws Exception {
 
-        
         final int PORT = Integer.parseInt(args[0]);
+        final String topicRouterHost = args[1];
+        final int topicRouterPort = Integer.parseInt(args[2]);
+        final String brokerTopic = args[3];
+        final String brokerAddress = args[4];
+
+        registerWithTopicRouter(topicRouterHost, topicRouterPort, brokerTopic, brokerAddress);
 
         // Create a keystore object to store the server certificate
         KeyStore keyStore = KeyStore.getInstance("JKS");
@@ -67,5 +77,35 @@ public class Broker {
         System.out.println("Topic: x Broker QUIC server started on port " + PORT);
         System.out.println("Listening for events...");
         System.out.println("--------------------------------------------------------------- ");
+    }
+
+        private static void registerWithTopicRouter(
+            String topicRouterHost,
+            int topicRouterPort,
+            String brokerTopic,
+            String brokerAddress) throws Exception {
+
+        URI routerUri = URI.create("https://" + topicRouterHost + ":" + topicRouterPort);
+        QuicClientConnection routerConnection = QuicClientConnection.newBuilder()
+                .uri(routerUri)
+                .applicationProtocol(Alpn.PROTOCOL)
+                .noServerCertificateCheck()
+                .build();
+
+        routerConnection.connect();
+        QuicStream stream = routerConnection.createStream(true);
+
+        String routeAddress = brokerAddress;
+        EventMessage routeRegistration = new EventMessage(brokerTopic, routeAddress, "broker", "broker");
+        String json = routeRegistration.toJson() + "\n";
+
+        OutputStream output = stream.getOutputStream();
+        output.write(json.getBytes(StandardCharsets.UTF_8));
+        output.flush();
+        output.close();
+
+        routerConnection.close();
+
+        System.out.println("Registered broker route with TopicRouter -> topic=" + brokerTopic + ", address=" + routeAddress);
     }
 }

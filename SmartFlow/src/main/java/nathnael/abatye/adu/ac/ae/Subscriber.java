@@ -1,6 +1,8 @@
 package nathnael.abatye.adu.ac.ae;
 
+import java.io.BufferedReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -16,17 +18,17 @@ import tech.kwik.core.QuicStream;
  */
 public class Subscriber {
 
-    private final String brokerHost;
-    private final int brokerPort;
+    private final String topicRouterHost;
+    private final int topicRouterPort;
     private final String subscriberId;
     private final String type = "SUBSCRIBER";
     
     private QuicClientConnection connection;
     private Thread listenerThread;
 
-    public Subscriber(String brokerHost, int brokerPort, String subscriberId) {
-        this.brokerHost = brokerHost;
-        this.brokerPort = brokerPort;
+    public Subscriber(String topicRouterHost, int topicRouterPort, String subscriberId) {
+        this.topicRouterHost = topicRouterHost;
+        this.topicRouterPort = topicRouterPort;
         this.subscriberId = subscriberId;
 
     }
@@ -35,6 +37,10 @@ public class Subscriber {
      * Initializes QUIC Connection, opens a stream, sends the required topic subscription, and loops forever to receive events.
      */
     public void start(String topic, String command) throws Exception {
+        String brokerAddress = resolveBrokerAddress(topic);
+        String[] brokerParts = brokerAddress.split(":", 2);
+        String brokerHost = brokerParts[0];
+        int brokerPort = Integer.parseInt(brokerParts[1]);
 
         EventMessage request = new EventMessage(topic, command, type, subscriberId);
         String json = request.toJson()+"\n";
@@ -64,6 +70,32 @@ public class Subscriber {
         // Start a listener thread so it does not block the main process synchronously
         listenerThread = new Thread(() -> listenForEvents(stream));
         listenerThread.start();
+    }
+
+    private String resolveBrokerAddress(String topic) throws Exception {
+        URI routerUri = URI.create("https://" + topicRouterHost + ":" + topicRouterPort);
+        QuicClientConnection routerConnection = QuicClientConnection.newBuilder()
+                .uri(routerUri)
+                .applicationProtocol(Alpn.PROTOCOL)
+                .noServerCertificateCheck()
+                .build();
+
+        routerConnection.connect();
+        QuicStream routerStream = routerConnection.createStream(true);
+
+        EventMessage routeRequest = new EventMessage(topic, "", "requester", subscriberId);
+        String routeRequestJson = routeRequest.toJson() + "\n";
+
+        OutputStream routerOutput = routerStream.getOutputStream();
+        routerOutput.write(routeRequestJson.getBytes(StandardCharsets.UTF_8));
+        routerOutput.flush();
+        routerOutput.close();
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(routerStream.getInputStream(), StandardCharsets.UTF_8));
+        String brokerAddress = reader.readLine();
+        routerConnection.close();
+
+        return brokerAddress;
     }
     
     private void listenForEvents(QuicStream stream) {
@@ -105,9 +137,15 @@ public class Subscriber {
     }
 
     public static void main(String[] args) throws Exception {
-        Subscriber subscriber = new Subscriber("127.0.0.1", 9999, "AirportApp-001");
+        String topicRouterHost = args[0];
+        int topicRouterPort = Integer.parseInt(args[1]);
+        String subscriberId = args[2];
+
+        Subscriber subscriber = new Subscriber(topicRouterHost, topicRouterPort, subscriberId);
         try (Scanner scanner = new Scanner(System.in)) {
             System.out.println("=== Subscriber CLI ===");
+            System.out.println("Connected through TopicRouter at " + topicRouterHost + ":" + topicRouterPort);
+            System.out.println("Subscriber ID: " + subscriberId);
             System.out.println("Request format: SUBSCRIBE <topic>");
             System.out.println("Request format: UNSUBSCRIBE <topic>");
             System.out.println("Example: SUBSCRIBE TRAFFIC.accidents");

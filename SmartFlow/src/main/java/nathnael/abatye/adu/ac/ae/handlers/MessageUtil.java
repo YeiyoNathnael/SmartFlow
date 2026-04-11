@@ -3,7 +3,6 @@ package nathnael.abatye.adu.ac.ae.handlers;
 
 
 
-import nathnael.abatye.adu.ac.ae.EventMessage;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,6 +10,8 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+
+import nathnael.abatye.adu.ac.ae.EventMessage;
 
 
 public final class MessageUtil {
@@ -48,6 +49,12 @@ public final class MessageUtil {
         writer.println(text); // Send the text (adds newline at the end)
         writer.flush();       // Make sure data is actually sent
         output.close();       // Close the connection/output stream
+    }
+
+    public static void writeTextNoClose(OutputStream output, String text) throws IOException {
+        PrintWriter writer = new PrintWriter(output, false);
+        writer.println(text);
+        writer.flush();
     }
 
     public static String classifyMessage(String message) {

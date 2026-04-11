@@ -5,6 +5,7 @@ import java.util.Set;
 import nathnael.abatye.adu.ac.ae.handlers.MessageUtil;
 import nathnael.abatye.adu.ac.ae.handlers.NotifyWorker;
 import nathnael.abatye.adu.ac.ae.handlers.PublisherHandler;
+import nathnael.abatye.adu.ac.ae.handlers.SecurityUtils;
 import nathnael.abatye.adu.ac.ae.handlers.StreamWorker;
 import nathnael.abatye.adu.ac.ae.handlers.SubscriberHandler;
 import tech.kwik.core.QuicStream;
@@ -73,6 +74,11 @@ public class QuicProtocolConnection implements ApplicationProtocolConnection {
                     }
                     break;
                 case "PUBLISHER":
+                    if (!SecurityUtils.verifyIntegrity(message.getPayload())) {
+                        response = "ACK from Broker -> event integrity check failed. The event was corrupted during sending or a man-in-the-middle attack may have occurred. Please send it again.";
+                        break;
+                    }
+
                     // Queue publisher messages so subscribers can later receive them in topic FIFO order.
                     publishedEvents.queuePublishedEvent(message);
                     response = "ACK from Broker -> queued publish event to topic: " + message.getTopic();

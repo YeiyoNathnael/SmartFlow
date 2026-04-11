@@ -39,6 +39,57 @@ public final class SecurityUtils {
         return Base64.getEncoder().encodeToString(combined);
     }
 
+    public static String decryptPayload(String encryptedPayload) throws Exception {
+        byte[] keyBytes = loadSharedKey();
+        SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
+
+        byte[] combined = Base64.getDecoder().decode(encryptedPayload);
+        if (combined.length <= GCM_IV_LENGTH_BYTES) {
+            throw new IllegalArgumentException("Encrypted payload is too short");
+        }
+
+        byte[] iv = new byte[GCM_IV_LENGTH_BYTES];
+        byte[] cipherText = new byte[combined.length - GCM_IV_LENGTH_BYTES];
+
+        System.arraycopy(combined, 0, iv, 0, iv.length);
+        System.arraycopy(combined, iv.length, cipherText, 0, cipherText.length);
+
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv);
+        cipher.init(Cipher.DECRYPT_MODE, keySpec, gcmSpec);
+
+        byte[] plainText = cipher.doFinal(cipherText);
+        return new String(plainText, StandardCharsets.UTF_8);
+    }
+
+    public static boolean verifyIntegrity(String encryptedPayload) {
+        try {
+            byte[] keyBytes = loadSharedKey();
+            SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
+
+            byte[] combined = Base64.getDecoder().decode(encryptedPayload);
+            if (combined.length <= GCM_IV_LENGTH_BYTES) {
+                return false;
+            }
+
+            byte[] iv = new byte[GCM_IV_LENGTH_BYTES];
+            byte[] cipherText = new byte[combined.length - GCM_IV_LENGTH_BYTES];
+
+            System.arraycopy(combined, 0, iv, 0, iv.length);
+            System.arraycopy(combined, iv.length, cipherText, 0, cipherText.length);
+
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv);
+            cipher.init(Cipher.DECRYPT_MODE, keySpec, gcmSpec);
+
+            // doFinal validates the GCM tag; plaintext is intentionally ignored.
+            cipher.doFinal(cipherText);
+            return true;
+        } catch (Exception integrityError) {
+            return false;
+        }
+    }
+
     private static byte[] loadSharedKey() throws Exception {
         String base64Key = new String(Files.readAllBytes(Paths.get(SHARED_KEY_PATH)), StandardCharsets.UTF_8).trim();
         byte[] keyBytes = Base64.getDecoder().decode(base64Key);

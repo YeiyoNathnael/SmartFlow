@@ -1,10 +1,13 @@
 package nathnael.abatye.adu.ac.ae;
+import nathnael.abatye.adu.ac.ae.handlers.PublisherHandler;
 import tech.kwik.core.QuicConnection;
 import tech.kwik.core.server.ApplicationProtocolConnection;
 import tech.kwik.core.server.ApplicationProtocolConnectionFactory;
 
 public class QuicProtocolFactory implements ApplicationProtocolConnectionFactory {
 	private static int clientCounter = 1;
+    private static final PublisherHandler publishedEvents = new PublisherHandler();
+
     @Override
     public ApplicationProtocolConnection createConnection(String protocol, QuicConnection quicConnection) {
         
@@ -17,7 +20,7 @@ public class QuicProtocolFactory implements ApplicationProtocolConnectionFactory
         System.out.println("========================================");
 
         // Create and return a new connection handler for this client
-        return new QuicProtocolConnection(clientId);
+        return new QuicProtocolConnection(clientId,publishedEvents);
     }
     @Override
     public int maxConcurrentPeerInitiatedBidirectionalStreams() {

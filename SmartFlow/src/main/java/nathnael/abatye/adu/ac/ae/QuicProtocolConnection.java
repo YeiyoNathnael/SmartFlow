@@ -1,16 +1,21 @@
 package nathnael.abatye.adu.ac.ae;
 
 import nathnael.abatye.adu.ac.ae.handlers.MessageUtil;
+import nathnael.abatye.adu.ac.ae.handlers.PublisherHandler;
 import tech.kwik.core.QuicStream;
 import tech.kwik.core.server.ApplicationProtocolConnection;
 
 public class QuicProtocolConnection implements ApplicationProtocolConnection {
 
     private final int clientId;
+    private final PublisherHandler publishedEvents;
 
-    public QuicProtocolConnection(int clientId) {
+
+    public QuicProtocolConnection(int clientId, PublisherHandler publishedEvents) {
         this.clientId = clientId; 
+        this.publishedEvents = publishedEvents;
         // Store client ID (used to identify which client this connection belongs to)
+
     }
 
     @Override
@@ -35,25 +40,29 @@ public class QuicProtocolConnection implements ApplicationProtocolConnection {
             String messageType = message.getType();
 
             // Print the received message, its type, and the stream ID
-            System.out.println(message + " -> Received from " + messageType 
+                System.out.println("[Client-" + clientId + "] " + message + " -> Received from " + messageType
                     + " | stream=" + stream.getInputStream());
 
             // Create an acknowledgment response to send back to the client
             String response;
-            if (messageType == "SUBSCRIBER") {
-               response =  "ACK from Broker -> request to " + message.getPayload()+ "to topic: " + message.getTopic()
-              + " received successfully";             
-            } else if(messageType == "PUBLISHER") {
-              
-              response =  "ACK from Broker -> " + message.getPayload()+ "to topic: " + message.getTopic()
-              + " received successfully";
-
-            }else{
-                response = "ACK from Broker -> I DONT KNOW WHO YOU ARE";
+            switch (messageType) {
+                case "SUBSCRIBER":
+                    response = "ACK from Broker -> request to " + message.getPayload() + "to topic: "
+                            + message.getTopic() + " received successfully";
+                    break;
+                case "PUBLISHER":
+                    // Queue publisher messages so subscribers can later receive them in topic FIFO order.
+                    publishedEvents.queuePublishedEvent(message);
+                    response = "ACK from Broker -> queued publish event to topic: " + message.getTopic();
+                    break;
+                default:
+                    response = "ACK from Broker -> I DONT KNOW WHO YOU ARE";
+                    break;
             }
-           
             // Send the response back through the same stream
             MessageUtil.writeText(stream.getOutputStream(), response);
+
+            // Now handle and do the main processing of the data.
 
         } catch (Exception e) {
             // If an error happens while processing the stream

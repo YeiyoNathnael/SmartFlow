@@ -2,3 +2,8 @@
 .classpath
 .settings/
 .metadata/
+
+# Build output and local setup
+target/
+cp.txt
+**/src/main/resources/shared_aes.key
